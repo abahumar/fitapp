@@ -344,7 +344,9 @@ async function connectBLE(scanAll){
   }
   try{
     device = await navigator.bluetooth.requestDevice(
-      scanAll ? { acceptAllDevices:true, optionalServices:[FTMS] } : { filters:[{ services:[FTMS] }] });
+      scanAll ? { acceptAllDevices:true, optionalServices:[FTMS] }
+              : { filters:[{ services:[FTMS] }, { namePrefix:'FS-' }, { namePrefix:'FitShow' }], optionalServices:[FTMS] });
+      // FitShow modules (FS-xxxx) have FTMS but often don't advertise it, so match them by name too
     setStatus('Connecting…');
     device.addEventListener('gattserverdisconnected', onDisconnect);
     const server = await device.gatt.connect();
