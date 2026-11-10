@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RunPad – Treadmill App Example</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1014;--card:#171b21;--card2:#1f242c;--line:#2a3039;
+  --text:#eef1f5;--mute:#8a93a1;--accent:#ff6a3d;--ok:#3ddc97;--warn:#ffc53d;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;height:100%}
+body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.num{font-family:"Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+
+header{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+.brand{font-family:"Barlow Condensed";font-weight:700;font-size:22px;letter-spacing:.5px}
+.brand b{color:var(--accent)}
+.status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)}
+.dot{width:8px;height:8px;border-radius:50%;background:#555}
+.dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.dot.demo{background:var(--warn)}
+
+main{flex:1;overflow-y:auto;padding:0 16px 96px;max-width:560px;width:100%;margin:0 auto}
+.view{display:none}.view.active{display:block}
+
+.connect{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.connect p{font-size:13px;color:var(--mute);margin:6px 0 12px;line-height:1.45}
+.row{display:flex;gap:8px}
+.btn{flex:1;padding:13px;border-radius:12px;background:var(--card2);font-weight:600;font-size:14px}
+.btn.primary{background:var(--accent);color:#fff}
+.link{font-size:12px;color:var(--mute);text-decoration:underline;margin-top:10px;display:inline-block}
+
+.hero{text-align:center;padding:10px 0 4px}
+.hero .lbl{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:1.5px}
+.hero .big{font-size:96px;font-weight:700;line-height:.95}
+.hero .unit{font-size:16px;color:var(--mute)}
+.seg{margin:8px auto 0;font-size:13px;color:var(--warn);min-height:18px}
+
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.stat{background:var(--card);border-radius:14px;padding:12px 14px}
+.stat .lbl{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:1px}
+.stat .v{font-size:34px;font-weight:700;margin-top:2px}
+.stat .v small{font-size:14px;color:var(--mute);font-weight:500;margin-left:3px}
+
+.ctrl{background:var(--card);border-radius:14px;padding:10px;display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.ctrl .name{font-size:12px;color:var(--mute);width:64px;padding-left:6px}
+.ctrl .val{flex:1;text-align:center;font-size:28px;font-weight:700}
+.pm{width:56px;height:52px;border-radius:12px;background:var(--card2);font-size:28px;font-weight:500}
+.pm:active{background:var(--line)}
+.chips{display:flex;gap:8px;margin:4px 0 16px}
+.chip{flex:1;padding:10px 0;border-radius:10px;background:var(--card);font-family:"Barlow Condensed";font-size:20px;font-weight:700}
+.chip:active{background:var(--line)}
+
+.actions{display:flex;gap:10px}
+.go{flex:1;height:64px;border-radius:16px;font-size:18px;font-weight:600;background:var(--ok);color:#06231a}
+.go.pause{background:var(--warn);color:#2b1f00}
+.stop{width:96px;height:64px;border-radius:16px;background:#3a1d1d;color:#ff8a8a;font-weight:600}
+
+h2{font-size:15px;font-weight:600;margin:6px 0 12px}
+.prog{background:var(--card);border-radius:16px;padding:14px;margin-bottom:10px}
+.prog .top{display:flex;align-items:center}
+.prog .t{font-weight:600}
+.prog .d{font-size:12px;color:var(--mute);margin-top:2px}
+.prog .start{margin-left:auto;padding:9px 16px;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;font-size:13px}
+.bars{display:flex;align-items:flex-end;gap:2px;height:40px;margin-top:12px}
+.bars i{flex:1;background:var(--line);border-radius:3px 3px 0 0}
+.bars i.inc{background:#4a3a2a}
+
+.hist{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center}
+.hist .when{font-size:13px}
+.hist .what{font-size:12px;color:var(--mute);margin-top:2px}
+.hist .km{margin-left:auto;font-size:26px;font-weight:700}
+.empty{color:var(--mute);font-size:14px;text-align:center;padding:30px 0}
+.setting{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:14px;padding:12px 14px;margin-top:16px;font-size:14px}
+.setting input{margin-left:auto;width:80px;background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px;font:inherit;text-align:right}
+
+.hr{background:var(--card);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.heart{font-size:30px;color:#555;line-height:1}
+.heart.on{color:#ff4d6d;animation:beat var(--beat,1s) infinite}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}}
+.hrv{font-size:34px;font-weight:700;line-height:1}
+.hrv small{font-size:14px;color:var(--mute);font-weight:500}
+.zone{font-size:12px;color:var(--mute);margin-top:3px}
+.hrbtn{margin-left:auto;padding:9px 12px;border-radius:10px;background:var(--card2);font-size:12px;font-weight:600}
+.zbar{position:relative;display:flex;gap:3px;height:6px;margin:8px 2px 14px}
+.zbar i{flex:1;border-radius:3px;opacity:.35}
+.zbar i:nth-child(1){background:#7a8699}.zbar i:nth-child(2){background:#3ddc97}.zbar i:nth-child(3){background:#ffc53d}
+.zbar i:nth-child(4){background:#ff8a3d}.zbar i:nth-child(5){background:#ff4d6d}
+.zbar i.on{opacity:1}
+.zbar b{position:absolute;top:-4px;width:3px;height:14px;background:#fff;border-radius:2px;display:none;transition:left .5s}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:rgba(13,16,20,.95);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:12px 0 14px;font-size:12px;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:4px}
+nav button.active{color:var(--accent)}
+nav svg{width:22px;height:22px}
+
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:#2a3039;color:var(--text);padding:12px 16px;border-radius:12px;font-size:13px;max-width:90%;opacity:0;transition:.25s;pointer-events:none;line-height:1.4;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:20px}
+.modal.show{display:flex}
+.modal .box{background:var(--card);border-radius:18px;padding:20px;width:100%;max-width:340px;text-align:center}
+.modal .box .num{font-size:44px;font-weight:700;margin:8px 0}
+.modal .box p{color:var(--mute);font-size:13px;margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">Run<b>Pad</b></div>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusTxt">Not connected</span></div>
+</header>
+
+<main>
+  <!-- WORKOUT -->
+  <section class="view active" id="v-workout">
+    <div class="connect" id="connectCard">
+      <strong>Connect your treadmill</strong>
+      <p>Turn on the treadmill and close the FitShow app first (only one app can connect at a time). Or try Demo to see how it works.</p>
+      <div class="row">
+        <button class="btn primary" id="btnConnect">Connect</button>
+        <button class="btn" id="btnDemo">Demo mode</button>
+      </div>
+      <button class="link" id="btnScanAll">Treadmill not listed? Scan all devices</button>
+    </div>
+
+    <div class="hero">
+      <div class="lbl">Speed</div>
+      <div class="big num" id="speed">0.0</div>
+      <div class="unit">km/h</div>
+      <div class="seg" id="segInfo"></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="lbl">Time</div><div class="v num" id="time">00:00</div></div>
+      <div class="stat"><div class="lbl">Distance</div><div class="v num"><span id="dist">0.00</span><small>km</small></div></div>
+      <div class="stat"><div class="lbl">Calories</div><div class="v num"><span id="kcal">0</span><small>kcal</small></div></div>
+      <div class="stat"><div class="lbl">Pace</div><div class="v num"><span id="pace">--:--</span><small>/km</small></div></div>
+    </div>
+
+    <div class="hr" id="hrCard">
+      <div class="heart" id="heart">♥</div>
+      <div>
+        <div class="hrv num"><span id="hrVal">--</span><small> bpm</small></div>
+        <div class="zone" id="hrZone">Heart rate not connected</div>
+      </div>
+      <button class="hrbtn" id="btnHR">Connect watch</button>
+    </div>
+    <div class="zbar" id="zbar"><i></i><i></i><i></i><i></i><i></i><b id="zmark"></b></div>
+
+    <div class="ctrl">
+      <div class="name">Speed</div>
+      <button class="pm" data-act="spd-">−</button>
+      <div class="val num" id="tSpeed">0.0</div>
+      <button class="pm" data-act="spd+">+</button>
+    </div>
+    <div class="chips" id="speedChips"></div>
+    <div class="ctrl">
+      <div class="name">Incline</div>
+      <button class="pm" data-act="inc-">−</button>
+      <div class="val num" id="tInc">0</div>
+      <button class="pm" data-act="inc+">+</button>
+    </div>
+
+    <div class="actions" style="margin-top:16px">
+      <button class="go" id="btnGo">Start</button>
+      <button class="stop" id="btnStop">Finish</button>
+    </div>
+  </section>
+
+  <!-- PROGRAMS -->
+  <section class="view" id="v-programs">
+    <h2>Programs</h2>
+    <div id="progList"></div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="view" id="v-history">
+    <h2>History</h2>
+    <div id="histList"></div>
+    <div class="setting">Body weight (for calories)<input type="number" id="weight" value="70" min="30" max="200"> kg</div>
+    <div class="setting" style="margin-top:8px">Age (for heart-rate zones)<input type="number" id="age" value="35" min="10" max="99"> yrs</div>
+  </section>
+</main>
+
+<nav>
+  <button class="active" data-view="workout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13" cy="4" r="2"/><path d="M7 21l3-6 3 2v5M10 15l1-5 4 3 3-1M8 10l3-1"/></svg>Workout</button>
+  <button data-view="programs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Programs</button>
+  <button data-view="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+<div class="modal" id="doneModal"><div class="box">
+  <div style="color:var(--mute);font-size:13px">Workout saved</div>
+  <div class="num" id="doneKm">0.00 km</div>
+  <p id="doneTxt"></p>
+  <button class="btn primary" style="width:100%" id="doneOk">OK</button>
+</div></div>
+
+<script>
+/* ===== Bluetooth FTMS constants ===== */
+const FTMS = 0x1826, TREADMILL_DATA = 0x2acd, CONTROL_POINT = 0x2ad9,
+      SPEED_RANGE = 0x2ad4, INCLINE_RANGE = 0x2ad5;
+
+/* ===== State ===== */
+let mode = null;            // 'ble' | 'demo' | null
+let device = null, cp = null, writeQ = Promise.resolve();
+let limits = { smin: 1, smax: 16, sinc: 0.1, imin: 0, imax: 15, iinc: 1 };
+let live = { speed: 0, incline: 0, devDist: null, devKcal: null };
+let target = { speed: 3.0, incline: 0 };
+let state = 'idle';         // idle | running | paused
+let ses = null;             // current session
+let program = null;         // active program
+let demoTimer = null;
+
+const PROGRAMS = [
+  { id:'easy', name:'Easy Walk', desc:'20 min · steady walking', seg:[[20,4.5,0]] },
+  { id:'interval', name:'Interval', desc:'24 min · 1 min run / 2 min walk', seg:[[3,4,0],...Array(6).fill(0).flatMap(()=>[[1,9,0],[2,5,0]]),[3,4,0]] },
+  { id:'hill', name:'Hill Climb', desc:'25 min · rising incline', seg:[[3,5,0],[4,5,3],[4,5,6],[4,5,9],[4,5,6],[3,5,3],[3,4,0]] },
+  { id:'fatburn', name:'Fat Burn', desc:'30 min · brisk walk with incline', seg:[[5,5,2],[20,5.5,5],[5,4.5,0]] },
+];
+
+/* ===== Helpers ===== */
+const $ = id => document.getElementById(id);
+const fmtT = s => { s=Math.floor(s); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
+  return (h? h+':'+String(m).padStart(2,'0') : String(m).padStart(2,'0'))+':'+String(x).padStart(2,'0'); };
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+let toastT; function toast(msg, ms=3200){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'), ms); }
+const store = { get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+                set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} } };
+
+/* ===== FTMS: parse Treadmill Data (0x2ACD) ===== */
+function parseTreadmill(dv){
+  const o = {}; let i = 2;
+  try{
+    const f = dv.getUint16(0, true);
+    if(!(f & 0x0001)){ o.speed = dv.getUint16(i,true)/100; i+=2; }      // instantaneous speed (present when bit0 = 0)
+    if(f & 0x0002) i+=2;                                                 // average speed
+    if(f & 0x0004){ o.dist = dv.getUint16(i,true) | (dv.getUint8(i+2)<<16); i+=3; } // total distance (m)
+    if(f & 0x0008){ o.incline = dv.getInt16(i,true)/10; i+=4; }          // inclination + ramp angle
+    if(f & 0x0010) i+=4;                                                 // elevation gain
+    if(f & 0x0020) i+=1;                                                 // instantaneous pace
+    if(f & 0x0040) i+=1;                                                 // average pace
+    if(f & 0x0080){ const k=dv.getUint16(i,true); if(k!==0xFFFF) o.kcal=k; i+=5; } // energy
+    if(f & 0x0100){ o.hr = dv.getUint8(i); i+=1; }                       // heart rate
+  }catch(e){ /* short packet – use what we got */ }
+  return o;
+}
+
+function onTreadmillData(o){
+  if(o.speed !== undefined) live.speed = o.speed;
+  if(o.incline !== undefined) live.incline = o.incline;
+  if(o.dist !== undefined) live.devDist = o.dist;
+  if(o.kcal !== undefined) live.devKcal = o.kcal;
+  if(o.hr) setHR(o.hr, 'treadmill');   // hand-grip sensors, if the treadmill has them
+  render();
+}
+
+/* ===== FTMS: control point (0x2AD9) ===== */
+function cpWrite(bytes){
+  if(mode !== 'ble' || !cp) return Promise.resolve();
+  writeQ = writeQ.then(() => cp.writeValueWithResponse(new Uint8Array(bytes)))
+                 .then(() => new Promise(r => setTimeout(r, 120)))
+                 .catch(e => toast('Command failed: ' + e.message));
+  return writeQ;
+}
+function onCpResponse(e){
+  const v = e.target.value; if(v.getUint8(0) !== 0x80) return;
+  const op = v.getUint8(1), res = v.getUint8(2);
+  if(res === 0x05){ cpWrite([0x00]); toast('Re-requesting control…'); }        // control not permitted
+  else if(res !== 0x01 && op !== 0x00) toast('Treadmill rejected command (code ' + res + ')');
+}
+const u16 = v => [v & 0xff, (v >> 8) & 0xff];
+function sendSpeed(kmh){ target.speed = kmh; cpWrite([0x02, ...u16(Math.round(kmh*100))]); }
+function sendIncline(p){ target.incline = p; const v = Math.round(p*10) & 0xffff; cpWrite([0x03, ...u16(v)]); }
+
+/* ===== Heart rate (standard BLE Heart Rate Service – Amazfit "Heart Rate Push", chest straps, etc.) ===== */
+const HR_SERVICE = 0x180d, HR_MEASUREMENT = 0x2a37;
+let hr = { bpm: null, src: null, dev: null, at: 0 };   // src: 'watch' | 'treadmill' | 'demo'
+const ZONES = [ ['Zone 1 · Warm up',.5], ['Zone 2 · Fat burn',.6], ['Zone 3 · Aerobic',.7], ['Zone 4 · Anaerobic',.8], ['Zone 5 · Max',.9] ];
+
+async function connectHR(){
+  if(hr.src === 'watch' && hr.dev){ hr.dev.gatt.disconnect(); return; }
+  if(!navigator.bluetooth){ toast('Bluetooth is not available here. Open this page over HTTPS in Chrome.', 5000); return; }
+  try{
+    const dev = await navigator.bluetooth.requestDevice({ filters:[{ services:[HR_SERVICE] }] });
+    $('btnHR').textContent = 'Connecting…';
+    dev.addEventListener('gattserverdisconnected', () => {
+      if(hr.dev !== dev) return;
+      hr = { bpm:null, src:null, dev:null, at:0 }; $('btnHR').textContent = 'Connect watch'; renderHR(); toast('Watch disconnected');
+    });
+    const ch = await (await (await dev.gatt.connect()).getPrimaryService(HR_SERVICE)).getCharacteristic(HR_MEASUREMENT);
+    await ch.startNotifications();
+    ch.addEventListener('characteristicvaluechanged', e => {
+      const v = e.target.value, flags = v.getUint8(0);
+      setHR(flags & 1 ? v.getUint16(1, true) : v.getUint8(1), 'watch');
+    });
+    hr.dev = dev; hr.src = 'watch';
+    $('btnHR').textContent = 'Disconnect';
+    toast('Heart rate from ' + (dev.name || 'watch'));
+  }catch(e){
+    $('btnHR').textContent = 'Connect watch';
+    if(e.name === 'NotFoundError') toast('Watch not found. On the Amazfit, turn on Heart Rate Push first, then try again.', 5000);
+    else if(e.name === 'SecurityError' || /permission|policy|disallowed/i.test(e.message))
+      toast('Bluetooth is blocked inside this preview. Host the page on HTTPS and open it in Chrome.', 5000);
+    else toast(e.message, 5000);
+  }
+}
+function setHR(bpm, src){
+  if(!bpm) return;
+  if(src === 'treadmill' && hr.src === 'watch') return;      // watch wins over treadmill grips
+  hr.bpm = bpm; hr.at = Date.now(); if(src !== 'watch') hr.src = src;
+  renderHR();
+}
+function hrMax(){ return 220 - (+$('age').value || 35); }
+function renderHR(){
+  const stale = !hr.bpm || Date.now() - hr.at > 6000;
+  const bpm = stale ? null : hr.bpm;
+  $('hrVal').textContent = bpm || '--';
+  $('heart').classList.toggle('on', !!bpm);
+  if(bpm) $('heart').style.setProperty('--beat', (60/bpm).toFixed(2)+'s');
+  const bars = document.querySelectorAll('#zbar i'), mark = $('zmark');
+  if(!bpm){
+    $('hrZone').textContent = hr.src === 'watch' ? 'Waiting for watch…' : 'Heart rate not connected';
+    bars.forEach(b => b.classList.remove('on')); mark.style.display = 'none'; return;
+  }
+  const pct = bpm / hrMax();
+  let z = 0; ZONES.forEach((zz,i) => { if(pct >= zz[1]) z = i; });
+  $('hrZone').textContent = ZONES[z][0] + ' · ' + Math.round(pct*100) + '% max';
+  bars.forEach((b,i) => b.classList.toggle('on', i === z));
+  mark.style.display = 'block';
+  mark.style.left = 'calc(' + (clamp((pct - .5) / .5, 0, 1) * 100) + '% - 1px)';
+}
+setInterval(renderHR, 2000);   // clears the reading if the watch stops sending
+
+/* ===== Connect ===== */
+async function connectBLE(scanAll){
+  if(!navigator.bluetooth){
+    toast('Bluetooth is not available here. Open this page over HTTPS in Chrome on Android or a laptop.', 5000); return;
+  }
+  try{
+    device = await navigator.bluetooth.requestDevice(
+      scanAll ? { acceptAllDevices:true, optionalServices:[FTMS] } : { filters:[{ services:[FTMS] }] });
+    setStatus('Connecting…');
+    device.addEventListener('gattserverdisconnected', onDisconnect);
+    const server = await device.gatt.connect();
+    let svc;
+    try{ svc = await server.getPrimaryService(FTMS); }
+    catch(e){ device.gatt.disconnect(); setStatus('Not connected');
+      toast('This device has no standard FTMS service – it uses FitShow’s own protocol, which needs extra work.', 6000); return; }
+
+    const td = await svc.getCharacteristic(TREADMILL_DATA);
+    await td.startNotifications();
+    td.addEventListener('characteristicvaluechanged', e => onTreadmillData(parseTreadmill(e.target.value)));
+
+    cp = await svc.getCharacteristic(CONTROL_POINT);
+    await cp.startNotifications();
+    cp.addEventListener('characteristicvaluechanged', onCpResponse);
+
+    try{ const r = await (await svc.getCharacteristic(SPEED_RANGE)).readValue();
+      limits.smin = r.getUint16(0,true)/100; limits.smax = r.getUint16(2,true)/100; limits.sinc = Math.max(.1, r.getUint16(4,true)/100); }catch(e){}
+    try{ const r = await (await svc.getCharacteristic(INCLINE_RANGE)).readValue();
+      limits.imin = r.getInt16(0,true)/10; limits.imax = r.getInt16(2,true)/10; limits.iinc = Math.max(.5, r.getUint16(4,true)/10); }catch(e){}
+
+    mode = 'ble';
+    await cpWrite([0x00]);   // request control
+    setStatus(device.name || 'Treadmill', 'on');
+    $('connectCard').style.display = 'none';
+    buildChips(); render();
+    toast('Connected to ' + (device.name || 'treadmill'));
+  }catch(e){
+    setStatus('Not connected');
+    if(e.name === 'NotFoundError') toast(scanAll ? 'No device selected.' : 'No FTMS treadmill found. Try “Scan all devices”.', 4000);
+    else if(e.name === 'SecurityError' || /permission|policy|disallowed/i.test(e.message))
+      toast('Bluetooth is blocked inside this preview. Host the page on your own HTTPS site and open it in Chrome. Use Demo mode to try it here.', 6500);
+    else toast(e.message, 5000);
+  }
+}
+function onDisconnect(){
+  if(mode !== 'ble') return;
+  mode = null; cp = null; setStatus('Disconnected');
+  $('connectCard').style.display = '';
+  if(state === 'running') togglePause(true);
+  toast('Treadmill disconnected');
+}
+function startDemo(){
+  mode = 'demo'; limits = { smin:1, smax:16, sinc:.1, imin:0, imax:15, iinc:1 };
+  setStatus('Demo treadmill', 'demo'); $('connectCard').style.display = 'none';
+  clearInterval(demoTimer);
+  demoTimer = setInterval(() => {   // fake treadmill: ramps toward target like a real belt
+    const goal = state === 'running' ? target.speed : 0;
+    const d = goal - live.speed; live.speed = Math.abs(d) < .1 ? goal : live.speed + Math.sign(d)*.1;
+    const di = target.incline - live.incline; live.incline = Math.abs(di) < .2 ? target.incline : live.incline + Math.sign(di)*.2;
+    // fake heart rate that follows effort (only if no real watch is connected)
+    if(hr.src !== 'watch'){
+      const goalHR = 72 + live.speed*9 + live.incline*2.5, cur = hr.bpm || 72;
+      if(Math.random() < .1) setHR(Math.round(cur + (goalHR - cur)*.15 + (Math.random()*2-1)), 'demo');
+    }
+    render();
+  }, 100);
+  buildChips(); render(); toast('Demo mode – a simulated treadmill');
+}
+function setStatus(txt, cls){ $('statusTxt').textContent = txt; $('dot').className = 'dot' + (cls ? ' '+cls : ''); }
+
+/* ===== Workout flow ===== */
+function startWorkout(prog){
+  if(!mode){ toast('Connect a treadmill or use Demo mode first'); showView('workout'); return; }
+  if(state !== 'idle') finishWorkout(true);
+  program = prog || null;
+  ses = { start: Date.now(), time: 0, dist: 0, kcal: 0, baseDist: live.devDist, baseKcal: live.devKcal, seg: -1, hrSum: 0, hrN: 0, hrMax: 0 };
+  state = 'running';
+  cpWrite([0x07]);   // start / resume
+  if(program){ applySegment(0); } else { setTimeout(() => sendSpeed(target.speed || 3), 600); }
+  showView('workout'); render();
+}
+function togglePause(force){
+  if(state === 'idle'){ startWorkout(null); return; }
+  if(state === 'running' || force){ state = 'paused'; cpWrite([0x08, 0x02]); }
+  else { state = 'running'; cpWrite([0x07]); setTimeout(() => sendSpeed(target.speed), 600); }
+  render();
+}
+function finishWorkout(silent){
+  if(state === 'idle') return;
+  cpWrite([0x08, 0x01]);   // stop
+  const rec = { at: Date.now(), time: ses.time, dist: ses.dist, kcal: Math.round(ses.kcal), prog: program ? program.name : 'Manual',
+                avgHr: ses.hrN ? Math.round(ses.hrSum / ses.hrN) : null, maxHr: ses.hrMax || null };
+  state = 'idle'; program = null;
+  if(rec.time >= 10){
+    const h = store.get('runpad_history', []); h.unshift(rec); store.set('runpad_history', h.slice(0,100)); renderHistory();
+    if(!silent){ $('doneKm').textContent = (rec.dist/1000).toFixed(2) + ' km';
+      $('doneTxt').textContent = fmtT(rec.time) + ' · ' + rec.kcal + ' kcal · ' + rec.prog +
+        (rec.avgHr ? ' · avg ' + rec.avgHr + ' / max ' + rec.maxHr + ' bpm' : ''); $('doneModal').classList.add('show'); }
+  }
+  ses = null; render();
+}
+
+function segIndexAt(t){
+  let acc = 0; for(let i=0;i<program.seg.length;i++){ acc += program.seg[i][0]*60; if(t < acc) return { i, left: acc - t }; }
+  return null;
+}
+function applySegment(i){
+  const [, s, inc] = program.seg[i]; ses.seg = i;
+  setTimeout(() => { sendSpeed(clamp(s, limits.smin, limits.smax)); sendIncline(clamp(inc, limits.imin, limits.imax)); }, i === 0 ? 600 : 0);
+}
+
+/* 1-second workout clock */
+setInterval(() => {
+  if(state !== 'running' || !ses) return;
+  ses.time++;
+  if(hr.bpm && Date.now() - hr.at < 6000){ ses.hrSum += hr.bpm; ses.hrN++; ses.hrMax = Math.max(ses.hrMax, hr.bpm); }
+  // distance: prefer treadmill's own counter, else integrate speed
+  if(live.devDist !== null && ses.baseDist !== null && live.devDist >= ses.baseDist) ses.dist = live.devDist - ses.baseDist;
+  else ses.dist += live.speed / 3.6;
+  // calories: prefer treadmill value, else ACSM estimate
+  if(live.devKcal !== null && ses.baseKcal !== null && live.devKcal >= ses.baseKcal) ses.kcal = live.devKcal - ses.baseKcal;
+  else { const w = +$('weight').value || 70, mpm = live.speed*1000/60, g = live.incline/100, run = live.speed > 7.5;
+         const vo2 = run ? 0.2*mpm + 0.9*mpm*g + 3.5 : 0.1*mpm + 1.8*mpm*g + 3.5;
+         if(live.speed > 0.5) ses.kcal += vo2 * w / 1000 * 5 / 60; }
+  if(program){
+    const s = segIndexAt(ses.time);
+    if(!s){ toast('Program complete 🎉'); finishWorkout(); return; }
+    if(s.i !== ses.seg) applySegment(s.i);
+  }
+  render();
+}, 1000);
+
+/* ===== Render ===== */
+function render(){
+  $('speed').textContent = live.speed.toFixed(1);
+  $('tSpeed').textContent = target.speed.toFixed(1);
+  $('tInc').textContent = (Math.round(target.incline*10)/10);
+  $('time').textContent = fmtT(ses ? ses.time : 0);
+  $('dist').textContent = ((ses ? ses.dist : 0)/1000).toFixed(2);
+  $('kcal').textContent = Math.round(ses ? ses.kcal : 0);
+  $('pace').textContent = live.speed > 0.5 ? fmtT(3600/live.speed) : '--:--';
+  const go = $('btnGo');
+  go.textContent = state === 'running' ? 'Pause' : state === 'paused' ? 'Resume' : 'Start';
+  go.classList.toggle('pause', state === 'running');
+  if(program && ses){
+    const s = segIndexAt(ses.time);
+    if(s){ const nx = program.seg[s.i+1];
+      $('segInfo').textContent = program.name + ' · ' + (s.i+1) + '/' + program.seg.length +
+        (nx ? ' · next ' + nx[1].toFixed(1) + ' km/h' + (nx[2] ? ', ' + nx[2] + '%' : '') + ' in ' + fmtT(s.left) : ' · ' + fmtT(s.left) + ' left'); }
+  } else $('segInfo').textContent = state === 'paused' ? 'Paused' : '';
+}
+function buildChips(){
+  const opts = [3, 5, 7, 9, 12].filter(v => v >= limits.smin && v <= limits.smax);
+  $('speedChips').innerHTML = opts.map(v => `<button class="chip" data-spd="${v}">${v}</button>`).join('');
+}
+function renderPrograms(){
+  $('progList').innerHTML = PROGRAMS.map(p => {
+    const total = p.seg.reduce((a,s) => a+s[0], 0);
+    const bars = p.seg.map(s => `<i style="flex:${s[0]};height:${Math.max(12, s[1]/12*100)}%" class="${s[2]>2?'inc':''}"></i>`).join('');
+    return `<div class="prog"><div class="top"><div><div class="t">${p.name}</div><div class="d">${p.desc}</div></div>
+      <button class="start" data-prog="${p.id}">Start</button></div><div class="bars">${bars}</div></div>`;
+  }).join('');
+}
+function renderHistory(){
+  const h = store.get('runpad_history', []);
+  $('histList').innerHTML = h.length ? h.map(r => {
+    const d = new Date(r.at);
+    return `<div class="hist"><div><div class="when">${d.toLocaleDateString(undefined,{day:'numeric',month:'short'})}, ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+      <div class="what">${r.prog} · ${fmtT(r.time)} · ${r.kcal} kcal${r.avgHr ? ' · ♥ ' + r.avgHr : ''}</div></div><div class="km num">${(r.dist/1000).toFixed(2)}<small style="font-size:13px;color:var(--mute)"> km</small></div></div>`;
+  }).join('') : '<div class="empty">No workouts yet</div>';
+}
+function showView(v){
+  document.querySelectorAll('.view').forEach(e => e.classList.toggle('active', e.id === 'v-'+v));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+}
+
+/* ===== Events ===== */
+$('btnConnect').onclick = () => connectBLE(false);
+$('btnScanAll').onclick = () => connectBLE(true);
+$('btnDemo').onclick = startDemo;
+$('btnGo').onclick = () => togglePause();
+$('btnStop').onclick = () => finishWorkout();
+$('doneOk').onclick = () => $('doneModal').classList.remove('show');
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => showView(b.dataset.view));
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'), c = e.target.closest('[data-spd]'), p = e.target.closest('[data-prog]');
+  if(a){ const k = a.dataset.act;
+    if(k === 'spd+') sendSpeed(clamp(+(target.speed + .5).toFixed(1), limits.smin, limits.smax));
+    if(k === 'spd-') sendSpeed(clamp(+(target.speed - .5).toFixed(1), limits.smin, limits.smax));
+    if(k === 'inc+') sendIncline(clamp(target.incline + limits.iinc, limits.imin, limits.imax));
+    if(k === 'inc-') sendIncline(clamp(target.incline - limits.iinc, limits.imin, limits.imax));
+    render(); }
+  if(c){ sendSpeed(+c.dataset.spd); render(); }
+  if(p){ startWorkout(PROGRAMS.find(x => x.id === p.dataset.prog)); }
+});
+$('weight').value = store.get('runpad_weight', 70);
+$('weight').onchange = e => store.set('runpad_weight', +e.target.value);
+$('age').value = store.get('runpad_age', 35);
+$('age').onchange = e => { store.set('runpad_age', +e.target.value); renderHR(); };
+$('btnHR').onclick = connectHR;
+
+buildChips(); renderPrograms(); renderHistory(); render();
+</script>
+</body>
+</html>
