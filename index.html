@@ -68,6 +68,10 @@ h2{font-size:15px;font-weight:600;margin:6px 0 12px}
 .prog .t{font-weight:600}
 .prog .d{font-size:12px;color:var(--mute);margin-top:2px}
 .prog .start{margin-left:auto;padding:9px 16px;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;font-size:13px}
+.lvls{display:flex;gap:6px;margin-top:12px}
+.lvl{flex:1;padding:7px 0;border-radius:9px;background:var(--card2);font-size:12px;font-weight:600;display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.lvl small{font-family:"Barlow Condensed";font-size:15px;color:var(--mute)}
+.lvl.on{background:var(--accent);color:#fff}.lvl.on small{color:#fff}
 .bars{display:flex;align-items:flex-end;gap:2px;height:40px;margin-top:12px}
 .bars i{flex:1;background:var(--line);border-radius:3px 3px 0 0}
 .bars i.inc{background:#4a3a2a}
@@ -219,7 +223,10 @@ let demoTimer = null;
 
 const PROGRAMS = [
   { id:'easy', name:'Easy Walk', desc:'20 min · steady walking', seg:[[20,4.5,0]] },
-  { id:'interval', name:'Interval', desc:'24 min · 1 min run / 2 min walk', seg:[[3,4,0],...Array(6).fill(0).flatMap(()=>[[1,9,0],[2,5,0]]),[3,4,0]] },
+  { id:'interval', name:'Interval', levels:[8,10,12,14,16], level:2,
+    build(s){ const rec = s >= 12 ? 6 : 5;   // jog recovery for harder levels
+      this.desc = `24 min · 6 × 1 min at ${s} km/h, 2 min recovery at ${rec}`;
+      return [[3,4,0],[2,rec,0],...Array(6).fill(0).flatMap(()=>[[1,s,0],[2,rec,0]]),[1,4,0]]; } },
   { id:'hill', name:'Hill Climb', desc:'25 min · rising incline', seg:[[3,5,0],[4,5,3],[4,5,6],[4,5,9],[4,5,6],[3,5,3],[3,4,0]] },
   { id:'fatburn', name:'Fat Burn', desc:'30 min · brisk walk with incline', seg:[[5,5,2],[20,5.5,5],[5,4.5,0]] },
 ];
@@ -494,11 +501,14 @@ function buildChips(){
   $('speedChips').innerHTML = opts.map(v => `<button class="chip" data-spd="${v}">${v}</button>`).join('');
 }
 function renderPrograms(){
+  const top = Math.max(limits.smax || 16, 12);
   $('progList').innerHTML = PROGRAMS.map(p => {
-    const total = p.seg.reduce((a,s) => a+s[0], 0);
-    const bars = p.seg.map(s => `<i style="flex:${s[0]};height:${Math.max(12, s[1]/12*100)}%" class="${s[2]>2?'inc':''}"></i>`).join('');
+    if(p.build) p.seg = p.build(p.levels[p.level]);
+    const bars = p.seg.map(s => `<i style="flex:${s[0]};height:${Math.max(10, s[1]/top*100)}%" class="${s[2]>2?'inc':''}"></i>`).join('');
+    const lv = p.levels ? `<div class="lvls">${p.levels.map((s,i) =>
+      `<button class="lvl${i===p.level?' on':''}" data-pid="${p.id}" data-lvl="${i}">L${i+1}<small>${s}</small></button>`).join('')}</div>` : '';
     return `<div class="prog"><div class="top"><div><div class="t">${p.name}</div><div class="d">${p.desc}</div></div>
-      <button class="start" data-prog="${p.id}">Start</button></div><div class="bars">${bars}</div></div>`;
+      <button class="start" data-prog="${p.id}">Start</button></div>${lv}<div class="bars">${bars}</div></div>`;
   }).join('');
 }
 function renderHistory(){
@@ -532,6 +542,9 @@ document.addEventListener('click', e => {
     render(); }
   if(c){ sendSpeed(+c.dataset.spd); render(); }
   if(p){ startWorkout(PROGRAMS.find(x => x.id === p.dataset.prog)); }
+  const l = e.target.closest('[data-lvl]');
+  if(l){ const pr = PROGRAMS.find(x => x.id === l.dataset.pid); pr.level = +l.dataset.lvl;
+    store.set('runpad_lvl_' + pr.id, pr.level); renderPrograms(); }
 });
 $('weight').value = store.get('runpad_weight', 70);
 $('weight').onchange = e => store.set('runpad_weight', +e.target.value);
@@ -539,6 +552,7 @@ $('age').value = store.get('runpad_age', 35);
 $('age').onchange = e => { store.set('runpad_age', +e.target.value); renderHR(); };
 $('btnHR').onclick = connectHR;
 
+PROGRAMS.forEach(p => { if(p.levels) p.level = clamp(store.get('runpad_lvl_' + p.id, p.level), 0, p.levels.length-1); });
 buildChips(); renderPrograms(); renderHistory(); render();
 </script>
 </body>
