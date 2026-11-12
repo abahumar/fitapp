@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>RunPad – Treadmill App Example</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0d1014">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -98,6 +103,10 @@ h2{font-size:15px;font-weight:600;margin:6px 0 12px}
 .zbar i:nth-child(4){background:#ff8a3d}.zbar i:nth-child(5){background:#ff4d6d}
 .zbar i.on{opacity:1}
 .zbar b{position:absolute;top:-4px;width:3px;height:14px;background:#fff;border-radius:2px;display:none;transition:left .5s}
+.setting select{margin-left:auto;background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px;font:inherit}
+.setting input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
+.install{margin-left:auto;padding:6px 10px;border-radius:8px;background:var(--accent);color:#fff;font-size:12px;font-weight:600}
+.install:not([hidden]) + .status{margin-left:8px}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:rgba(13,16,20,.95);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;padding:12px 0 14px;font-size:12px;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:4px}
 nav button.active{color:var(--accent)}
@@ -116,6 +125,7 @@ nav svg{width:22px;height:22px}
 
 <header>
   <div class="brand">Run<b>Pad</b></div>
+  <button class="install" id="btnInstall" hidden>Install app</button>
   <div class="status"><span class="dot" id="dot"></span><span id="statusTxt">Not connected</span></div>
 </header>
 
@@ -188,6 +198,11 @@ nav svg{width:22px;height:22px}
     <div id="histList"></div>
     <div class="setting">Body weight (for calories)<input type="number" id="weight" value="70" min="30" max="200"> kg</div>
     <div class="setting" style="margin-top:8px">Age (for heart-rate zones)<input type="number" id="age" value="35" min="10" max="99"> yrs</div>
+    <div class="setting" style="margin-top:8px">Voice coach
+      <select id="voice"><option value="off">Off</option><option value="en">English</option><option value="ms">Bahasa Melayu</option></select>
+    </div>
+    <div class="setting" style="margin-top:8px">Keep screen on during workouts<input type="checkbox" id="wake" checked></div>
+    <button class="btn" style="width:100%;margin-top:8px" id="btnTestVoice">Test voice</button>
   </section>
 </main>
 
@@ -290,24 +305,47 @@ const HR_SERVICE = 0x180d, HR_MEASUREMENT = 0x2a37;
 let hr = { bpm: null, src: null, dev: null, at: 0 };   // src: 'watch' | 'treadmill' | 'demo'
 const ZONES = [ ['Zone 1 · Warm up',.5], ['Zone 2 · Fat burn',.6], ['Zone 3 · Aerobic',.7], ['Zone 4 · Anaerobic',.8], ['Zone 5 · Max',.9] ];
 
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const RETRY_DELAYS = [1000, 2000, 3000, 5000, 8000, 10000];
+let hrUserOff = false, hrRetrying = false;
+
+function onHrValue(e){
+  const v = e.target.value, flags = v.getUint8(0);
+  setHR(flags & 1 ? v.getUint16(1, true) : v.getUint8(1), 'watch');
+}
+async function setupHR(dev){
+  const ch = await (await (await dev.gatt.connect()).getPrimaryService(HR_SERVICE)).getCharacteristic(HR_MEASUREMENT);
+  await ch.startNotifications();
+  ch.addEventListener('characteristicvaluechanged', onHrValue);
+  hr.dev = dev; hr.src = 'watch';
+  $('btnHR').textContent = 'Disconnect';
+}
+async function onHrDisconnect(){
+  if(hrUserOff || hrRetrying || !hr.dev){ return; }
+  const dev = hr.dev; hrRetrying = true;
+  $('hrZone').textContent = 'Watch lost – reconnecting…'; $('btnHR').textContent = 'Reconnecting…';
+  for(const ms of RETRY_DELAYS){
+    await sleep(ms);
+    if(hrUserOff) break;
+    try{ await setupHR(dev); hrRetrying = false; toast('Watch reconnected'); return; }catch(e){}
+  }
+  hrRetrying = false;
+  hr = { bpm:null, src:null, dev:null, at:0 }; $('btnHR').textContent = 'Connect watch'; renderHR();
+  toast('Lost the watch. Check Heart Rate Push is on, then tap Connect watch.', 5000);
+}
 async function connectHR(){
-  if(hr.src === 'watch' && hr.dev){ hr.dev.gatt.disconnect(); return; }
+  if(hr.src === 'watch' && hr.dev){
+    hrUserOff = true; const d = hr.dev; hr = { bpm:null, src:null, dev:null, at:0 };
+    try{ d.gatt.disconnect(); }catch(e){}
+    $('btnHR').textContent = 'Connect watch'; renderHR(); return;
+  }
   if(!navigator.bluetooth){ toast('Bluetooth is not available here. Open this page over HTTPS in Chrome.', 5000); return; }
   try{
     const dev = await navigator.bluetooth.requestDevice({ filters:[{ services:[HR_SERVICE] }] });
+    hrUserOff = false;
     $('btnHR').textContent = 'Connecting…';
-    dev.addEventListener('gattserverdisconnected', () => {
-      if(hr.dev !== dev) return;
-      hr = { bpm:null, src:null, dev:null, at:0 }; $('btnHR').textContent = 'Connect watch'; renderHR(); toast('Watch disconnected');
-    });
-    const ch = await (await (await dev.gatt.connect()).getPrimaryService(HR_SERVICE)).getCharacteristic(HR_MEASUREMENT);
-    await ch.startNotifications();
-    ch.addEventListener('characteristicvaluechanged', e => {
-      const v = e.target.value, flags = v.getUint8(0);
-      setHR(flags & 1 ? v.getUint16(1, true) : v.getUint8(1), 'watch');
-    });
-    hr.dev = dev; hr.src = 'watch';
-    $('btnHR').textContent = 'Disconnect';
+    dev.addEventListener('gattserverdisconnected', onHrDisconnect);
+    await setupHR(dev);
     toast('Heart rate from ' + (dev.name || 'watch'));
   }catch(e){
     $('btnHR').textContent = 'Connect watch';
@@ -356,30 +394,17 @@ async function connectBLE(scanAll){
       // FitShow modules (FS-xxxx) have FTMS but often don't advertise it, so match them by name too
     setStatus('Connecting…');
     device.addEventListener('gattserverdisconnected', onDisconnect);
-    const server = await device.gatt.connect();
-    let svc;
-    try{ svc = await server.getPrimaryService(FTMS); }
-    catch(e){ device.gatt.disconnect(); setStatus('Not connected');
-      toast('This device has no standard FTMS service – it uses FitShow’s own protocol, which needs extra work.', 6000); return; }
-
-    const td = await svc.getCharacteristic(TREADMILL_DATA);
-    await td.startNotifications();
-    td.addEventListener('characteristicvaluechanged', e => onTreadmillData(parseTreadmill(e.target.value)));
-
-    cp = await svc.getCharacteristic(CONTROL_POINT);
-    await cp.startNotifications();
-    cp.addEventListener('characteristicvaluechanged', onCpResponse);
-
-    try{ const r = await (await svc.getCharacteristic(SPEED_RANGE)).readValue();
-      limits.smin = r.getUint16(0,true)/100; limits.smax = r.getUint16(2,true)/100; limits.sinc = Math.max(.1, r.getUint16(4,true)/100); }catch(e){}
-    try{ const r = await (await svc.getCharacteristic(INCLINE_RANGE)).readValue();
-      limits.imin = r.getInt16(0,true)/10; limits.imax = r.getInt16(2,true)/10; limits.iinc = Math.max(.5, r.getUint16(4,true)/10); }catch(e){}
-
-    mode = 'ble';
-    await cpWrite([0x00]);   // request control
-    setStatus(device.name || 'Treadmill', 'on');
+    try{ await setupTreadmill(); }
+    catch(e){
+      if(e.name === 'NotFoundError' && /service/i.test(e.message)){
+        try{ device.gatt.disconnect(); }catch(_){}
+        setStatus('Not connected');
+        toast('This device has no standard FTMS service – it uses FitShow’s own protocol, which needs extra work.', 6000); return;
+      }
+      throw e;
+    }
     $('connectCard').style.display = 'none';
-    buildChips(); render();
+    buildChips(); renderPrograms(); render();
     toast('Connected to ' + (device.name || 'treadmill'));
   }catch(e){
     setStatus('Not connected');
@@ -389,12 +414,50 @@ async function connectBLE(scanAll){
     else toast(e.message, 5000);
   }
 }
-function onDisconnect(){
-  if(mode !== 'ble') return;
-  mode = null; cp = null; setStatus('Disconnected');
+/* subscribe to the treadmill – used for the first connect and for every reconnect */
+function onTdValue(e){ onTreadmillData(parseTreadmill(e.target.value)); }
+async function setupTreadmill(){
+  const server = await device.gatt.connect();
+  const svc = await server.getPrimaryService(FTMS);
+  const td = await svc.getCharacteristic(TREADMILL_DATA);
+  await td.startNotifications();
+  td.addEventListener('characteristicvaluechanged', onTdValue);
+  const c = await svc.getCharacteristic(CONTROL_POINT);
+  await c.startNotifications();
+  c.addEventListener('characteristicvaluechanged', onCpResponse);
+  try{ const r = await (await svc.getCharacteristic(SPEED_RANGE)).readValue();
+    limits.smin = r.getUint16(0,true)/100; limits.smax = r.getUint16(2,true)/100; limits.sinc = Math.max(.1, r.getUint16(4,true)/100); }catch(e){}
+  try{ const r = await (await svc.getCharacteristic(INCLINE_RANGE)).readValue();
+    limits.imin = r.getInt16(0,true)/10; limits.imax = r.getInt16(2,true)/10; limits.iinc = Math.max(.5, r.getUint16(4,true)/10); }catch(e){}
+  cp = c; mode = 'ble'; writeQ = Promise.resolve();
+  await cpWrite([0x00]);   // request control
+  setStatus(device.name || 'Treadmill', 'on');
+}
+
+let tmRetrying = false;
+async function onDisconnect(){
+  if(mode !== 'ble' || tmRetrying) return;
+  cp = null; tmRetrying = true;
+  say('lost');
+  // the treadmill's own counters may restart after a reconnect – continue by counting ourselves
+  if(ses){ ses.baseDist = null; ses.baseKcal = null; }
+  for(let a = 0; a < RETRY_DELAYS.length; a++){
+    setStatus('Reconnecting… (' + (a+1) + '/' + RETRY_DELAYS.length + ')', 'demo');
+    await sleep(RETRY_DELAYS[a]);
+    try{
+      await setupTreadmill();
+      tmRetrying = false; toast('Treadmill reconnected'); say('back');
+      // never restart the belt by itself – if it stopped, ask the user
+      setTimeout(() => {
+        if(state === 'running' && live.speed < 0.5){ state = 'paused'; render(); toast('Belt stopped. Tap Resume when you’re ready.', 5000); }
+      }, 2500);
+      return;
+    }catch(e){}
+  }
+  tmRetrying = false; mode = null; setStatus('Disconnected');
   $('connectCard').style.display = '';
-  if(state === 'running') togglePause(true);
-  toast('Treadmill disconnected');
+  if(state === 'running'){ state = 'paused'; render(); }
+  toast('Couldn’t reconnect. Check the treadmill is on, then tap Connect.', 5000);
 }
 function startDemo(){
   mode = 'demo'; limits = { smin:1, smax:16, sinc:.1, imin:0, imax:15, iinc:1 };
@@ -415,6 +478,101 @@ function startDemo(){
 }
 function setStatus(txt, cls){ $('statusTxt').textContent = txt; $('dot').className = 'dot' + (cls ? ' '+cls : ''); }
 
+/* ===== Voice coach (phone's built-in text-to-speech) ===== */
+const PHRASES = {
+  en: {
+    start: n => n ? n + ' started. Let’s go!' : 'Workout started.',
+    next: (s, inc) => 'In 10 seconds, ' + s + ' kilometres per hour' + (inc ? ', incline ' + inc + ' percent' : '') + '.',
+    go: s => 'Go! ' + s + ' kilometres per hour.',
+    easy: s => 'Recover. ' + s + ' kilometres per hour.',
+    km: (n, t, p) => n + (n === 1 ? ' kilometre' : ' kilometres') + '. Time ' + t + '. Pace ' + p + ' per kilometre.',
+    half: 'Halfway there. Keep it up.',
+    last: 'Last minute. Finish strong.',
+    zone: z => 'Heart rate zone ' + z + '.',
+    zone5: 'Zone 5. Ease off if you need to.',
+    paused: 'Paused.', resumed: 'Resumed.',
+    done: (d, k) => 'Workout complete. ' + d + ' kilometres, ' + k + ' calories. Great job!',
+    lost: 'Treadmill disconnected. Reconnecting.', back: 'Treadmill reconnected.',
+    test: 'Voice coach is on. Let’s run!',
+    mins: (m, s) => (m ? m + (m === 1 ? ' minute ' : ' minutes ') : '') + s + ' seconds'
+  },
+  ms: {
+    start: n => n ? n + ' dimulakan. Jom!' : 'Senaman dimulakan.',
+    next: (s, inc) => 'Dalam 10 saat, ' + s + ' kilometer sejam' + (inc ? ', kecerunan ' + inc + ' peratus' : '') + '.',
+    go: s => 'Mula! ' + s + ' kilometer sejam.',
+    easy: s => 'Rehat. ' + s + ' kilometer sejam.',
+    km: (n, t, p) => n + ' kilometer. Masa ' + t + '. Pace ' + p + ' sekilometer.',
+    half: 'Separuh jalan. Teruskan!',
+    last: 'Minit terakhir. Habiskan dengan kuat!',
+    zone: z => 'Zon degupan jantung ' + z + '.',
+    zone5: 'Zon 5. Perlahankan jika perlu.',
+    paused: 'Dijeda.', resumed: 'Disambung.',
+    done: (d, k) => 'Senaman selesai. ' + d + ' kilometer, ' + k + ' kalori. Syabas!',
+    lost: 'Treadmill terputus. Menyambung semula.', back: 'Treadmill disambung semula.',
+    test: 'Jurulatih suara dihidupkan. Jom lari!',
+    mins: (m, s) => (m ? m + ' minit ' : '') + s + ' saat'
+  }
+};
+let voiceLang = 'off', voicePick = null;
+function pickVoice(){
+  if(!('speechSynthesis' in window) || voiceLang === 'off') return;
+  const vs = speechSynthesis.getVoices(), want = voiceLang === 'ms' ? /^(ms|id)/i : /^en/i;
+  voicePick = vs.find(v => want.test(v.lang) && /google/i.test(v.name)) || vs.find(v => want.test(v.lang)) || null;
+}
+if('speechSynthesis' in window) speechSynthesis.onvoiceschanged = pickVoice;
+function say(key, ...args){
+  if(voiceLang === 'off' || !('speechSynthesis' in window)) return;
+  const p = PHRASES[voiceLang][key]; if(p === undefined) return;
+  const text = typeof p === 'function' ? p(...args) : p;
+  try{
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = voiceLang === 'ms' ? 'ms-MY' : 'en-US'; if(voicePick) u.voice = voicePick;
+    u.rate = 1.02; speechSynthesis.speak(u);
+  }catch(e){}
+}
+const spk = n => String(Math.round(n*10)/10);                        // 16 → "16", 5.5 → "5.5"
+const spkTime = s => { s = Math.round(s); return PHRASES[voiceLang === 'off' ? 'en' : voiceLang].mins(Math.floor(s/60), s%60); };
+
+/* things the coach watches each second */
+let coach = { km: 0, half: false, last: false, warned: -1, zone: -1, zoneSince: 0, zoneSaid: -1, zoneAt: 0 };
+function coachTick(){
+  if(!ses) return;
+  // km splits
+  const km = Math.floor(ses.dist / 1000);
+  if(km > coach.km){ coach.km = km; say('km', km, spkTime(ses.time), spkTime(ses.time / (ses.dist/1000))); }
+  // program cues
+  if(program){
+    const total = program.seg.reduce((a,s) => a + s[0]*60, 0), s = segIndexAt(ses.time);
+    if(s){
+      const nx = program.seg[s.i+1];
+      if(nx && s.left === 10 && coach.warned !== s.i){ coach.warned = s.i; say('next', spk(nx[1]), nx[2] ? spk(nx[2]) : 0); }
+    }
+    if(!coach.half && ses.time >= total/2 && total > 300){ coach.half = true; say('half'); }
+    if(!coach.last && total - ses.time === 60 && total > 300){ coach.last = true; say('last'); }
+  }
+  // heart-rate zone – speak only when a new zone holds for 15 s, at most once a minute
+  if(hr.bpm && Date.now() - hr.at < 6000){
+    const pct = hr.bpm / hrMax(); let z = 0; ZONES.forEach((zz,i) => { if(pct >= zz[1]) z = i; });
+    if(z !== coach.zone){ coach.zone = z; coach.zoneSince = ses.time; }
+    else if(z !== coach.zoneSaid && ses.time - coach.zoneSince >= 15 && Date.now() - coach.zoneAt > 60000){
+      coach.zoneSaid = z; coach.zoneAt = Date.now(); say(z === 4 ? 'zone5' : 'zone', z + 1);
+    }
+  }
+}
+
+/* ===== Keep the screen on during a workout ===== */
+let wakeLock = null;
+async function keepAwake(on){
+  try{
+    if(on && $('wake').checked && 'wakeLock' in navigator && !wakeLock){
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } else if(!on && wakeLock){ await wakeLock.release(); wakeLock = null; }
+  }catch(e){ /* not supported or not allowed here */ }
+}
+// the browser drops the lock when you switch apps – take it back when you return
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && state !== 'idle') keepAwake(true); });
+
 /* ===== Workout flow ===== */
 function startWorkout(prog){
   if(!mode){ toast('Connect a treadmill or use Demo mode first'); showView('workout'); return; }
@@ -422,14 +580,17 @@ function startWorkout(prog){
   program = prog || null;
   ses = { start: Date.now(), time: 0, dist: 0, kcal: 0, baseDist: live.devDist, baseKcal: live.devKcal, seg: -1, hrSum: 0, hrN: 0, hrMax: 0 };
   state = 'running';
+  coach = { km: 0, half: false, last: false, warned: -1, zone: -1, zoneSince: 0, zoneSaid: -1, zoneAt: 0 };
+  keepAwake(true);
+  say('start', program ? program.name : '');
   cpWrite([0x07]);   // start / resume
   if(program){ applySegment(0); } else { setTimeout(() => sendSpeed(target.speed || 3), 600); }
   showView('workout'); render();
 }
 function togglePause(force){
   if(state === 'idle'){ startWorkout(null); return; }
-  if(state === 'running' || force){ state = 'paused'; cpWrite([0x08, 0x02]); }
-  else { state = 'running'; cpWrite([0x07]); setTimeout(() => sendSpeed(target.speed), 600); }
+  if(state === 'running' || force){ state = 'paused'; cpWrite([0x08, 0x02]); say('paused'); }
+  else { state = 'running'; cpWrite([0x07]); say('resumed'); keepAwake(true); setTimeout(() => sendSpeed(target.speed), 600); }
   render();
 }
 function finishWorkout(silent){
@@ -437,7 +598,8 @@ function finishWorkout(silent){
   cpWrite([0x08, 0x01]);   // stop
   const rec = { at: Date.now(), time: ses.time, dist: ses.dist, kcal: Math.round(ses.kcal), prog: program ? program.name : 'Manual',
                 avgHr: ses.hrN ? Math.round(ses.hrSum / ses.hrN) : null, maxHr: ses.hrMax || null };
-  state = 'idle'; program = null;
+  state = 'idle'; program = null; keepAwake(false);
+  if(!silent && rec.time >= 10) say('done', (rec.dist/1000).toFixed(2), rec.kcal);
   if(rec.time >= 10){
     const h = store.get('runpad_history', []); h.unshift(rec); store.set('runpad_history', h.slice(0,100)); renderHistory();
     if(!silent){ $('doneKm').textContent = (rec.dist/1000).toFixed(2) + ' km';
@@ -452,7 +614,9 @@ function segIndexAt(t){
   return null;
 }
 function applySegment(i){
-  const [, s, inc] = program.seg[i]; ses.seg = i;
+  const [, s, inc] = program.seg[i];
+  if(i > 0){ const prev = program.seg[i-1][1]; if(s !== prev) say(s > prev ? 'go' : 'easy', spk(s)); }
+  ses.seg = i;
   setTimeout(() => { sendSpeed(clamp(s, limits.smin, limits.smax)); sendIncline(clamp(inc, limits.imin, limits.imax)); }, i === 0 ? 600 : 0);
 }
 
@@ -474,6 +638,7 @@ setInterval(() => {
     if(!s){ toast('Program complete 🎉'); finishWorkout(); return; }
     if(s.i !== ses.seg) applySegment(s.i);
   }
+  coachTick();
   render();
 }, 1000);
 
@@ -551,6 +716,33 @@ $('weight').onchange = e => store.set('runpad_weight', +e.target.value);
 $('age').value = store.get('runpad_age', 35);
 $('age').onchange = e => { store.set('runpad_age', +e.target.value); renderHR(); };
 $('btnHR').onclick = connectHR;
+
+voiceLang = store.get('runpad_voice', 'en');
+$('voice').value = voiceLang; pickVoice();
+$('voice').onchange = e => {
+  voiceLang = e.target.value; store.set('runpad_voice', voiceLang); pickVoice();
+  if(voiceLang === 'ms' && 'speechSynthesis' in window && !voicePick && speechSynthesis.getVoices().length)
+    toast('No Malay voice found on this phone – it may sound like English. Add one in Android Settings → Text-to-speech.', 6000);
+  say('test');
+};
+$('btnTestVoice').onclick = () => {
+  if(!('speechSynthesis' in window)) return toast('This browser has no voice support.');
+  if(voiceLang === 'off') return toast('Turn on the voice coach first.');
+  say('test');
+};
+$('wake').checked = store.get('runpad_wake', true);
+$('wake').onchange = e => { store.set('runpad_wake', e.target.checked); if(!e.target.checked) keepAwake(false); };
+
+/* ===== Install as an app (PWA) ===== */
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('btnInstall').hidden = false; });
+window.addEventListener('appinstalled', () => { $('btnInstall').hidden = true; toast('RunPad installed – find it on your home screen'); });
+$('btnInstall').onclick = async () => {
+  if(!installEvt) return; installEvt.prompt();
+  try{ await installEvt.userChoice; }catch(e){}
+  installEvt = null; $('btnInstall').hidden = true;
+};
+try{ if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); }catch(e){}
 
 PROGRAMS.forEach(p => { if(p.levels) p.level = clamp(store.get('runpad_lvl_' + p.id, p.level), 0, p.levels.length-1); });
 buildChips(); renderPrograms(); renderHistory(); render();
