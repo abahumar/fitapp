@@ -172,6 +172,79 @@ nav svg{width:22px;height:22px}
   .go,.stop{height:84px;font-size:20px}
   .hrv{font-size:40px}
 }
+
+/* ===== Program countdown ===== */
+.cd{--c:var(--accent);background:var(--card);border-radius:18px;padding:12px 16px 14px;margin:10px 0;border:2px solid transparent}
+.cd.t-recover{--c:#3ddc97}.cd.t-easy{--c:#7a8699}.cd.t-climb{--c:#ffc53d}
+.cd-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cd-lbl{font-weight:700;font-size:15px;letter-spacing:2px;padding:5px 12px;border-radius:9px;background:var(--c);color:#111}
+.cd-round{font-size:14px;color:var(--mute);font-weight:600}
+.cd-time{font-size:104px;font-weight:700;line-height:1;text-align:center;margin:4px 0 8px;color:var(--text)}
+.cd-bar{height:10px;background:var(--card2);border-radius:5px;overflow:hidden}
+.cd-bar i{display:block;height:100%;width:0;background:var(--c);transition:width 1s linear}
+.cd-next{font-size:15px;color:var(--mute);text-align:center;margin-top:10px}
+.cd-next b{color:var(--text)}
+.cd.final{border-color:var(--warn);animation:cdflash 1s infinite}
+.cd.final .cd-time{color:var(--warn)}
+.cd.paused .cd-time{color:var(--mute)}
+@keyframes cdflash{50%{background:#2b2410}}
+.cdB{display:none!important}
+body.in-prog .chips{display:none}
+body.in-prog .hero .big{font-size:64px}
+body.in-prog .hero .lbl{display:none}
+
+/* ===== Summary sheet ===== */
+.sheet{position:fixed;inset:0;background:var(--bg);overflow-y:auto;z-index:30;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 24px)}
+.sheet[hidden]{display:none}
+.sheet-in{max-width:560px;margin:0 auto}
+.sum-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.sum-ok{width:42px;height:42px;border-radius:50%;background:var(--ok);color:#06231a;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex:none}
+.sum-ok.hist{background:var(--card2);color:var(--mute)}
+.sum-title{font-size:18px;font-weight:600}
+.sum-sub{font-size:13px;color:var(--mute);margin-top:2px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sgrid div{background:var(--card);border-radius:14px;padding:10px 12px}
+.sgrid .l{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:1px;padding:0;background:none}
+.sgrid .v{font-family:"Barlow Condensed";font-size:30px;font-weight:700;padding:0;background:none}
+.sgrid .v small{font-size:13px;color:var(--mute);font-weight:500;margin-left:3px}
+.sbody{display:grid;gap:10px;margin-top:10px}
+.scard{background:var(--card);border-radius:14px;padding:12px 14px}
+.shead{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:8px}
+.shead span{font-weight:400;color:var(--mute);font-size:12px}
+#sumChart{width:100%;height:150px;display:block}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-top:4px}
+.zbar2{display:flex;height:12px;border-radius:6px;overflow:hidden;gap:2px;margin-bottom:8px}
+.zrow,.srow{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0}
+.zrow span:last-child,.srow .p{margin-left:auto;color:var(--mute);font-variant-numeric:tabular-nums}
+.srow .k{width:52px;color:var(--mute)}
+.srow .b{flex:1;height:8px;border-radius:4px;background:var(--card2)}
+.srow .b i{display:block;height:100%;border-radius:4px;background:#4a5260}
+.srow.best .b i{background:var(--ok)}
+.srow .p{width:74px;text-align:right;margin-left:0}
+.srow.best .p{color:var(--ok)}
+.muted{color:var(--mute);font-size:13px;padding:6px 0}
+.hist{cursor:pointer}
+.hist:active{background:var(--card2)}
+
+@media (orientation: landscape) and (min-width: 600px){
+  .cdA{display:none!important}
+  .cdB{display:block!important}
+  .cdB[hidden]{display:none!important}
+  .cd{margin:0 0 8px}
+  .cd-time{font-size:clamp(56px,17vh,120px)}
+  body.in-prog .hero .big{font-size:clamp(56px,16vh,110px)}
+  .sheet{padding-left:calc(24px + env(safe-area-inset-left));padding-right:calc(24px + env(safe-area-inset-right))}
+  .sheet-in{max-width:1000px}
+  .sgrid{grid-template-columns:repeat(4,1fr)}
+  .sbody{grid-template-columns:1fr 1fr}
+  .scard.wide{grid-column:1/-1}
+}
+@media (orientation: landscape) and (max-height: 480px){
+  .cd{padding:8px 12px 10px}
+  .cd-time{margin:0 0 6px}
+  .cd-next{margin-top:6px;font-size:13px}
+  .cd-lbl{font-size:13px;padding:3px 10px}
+}
 </style>
 </head>
 <body>
@@ -202,6 +275,12 @@ nav svg{width:22px;height:22px}
       <div class="unit">km/h</div>
       <div class="seg" id="segInfo"></div>
     </div>
+    <div class="cd cdA" hidden>
+      <div class="cd-top"><span class="cd-lbl">RUN</span><span class="cd-round"></span></div>
+      <div class="cd-time num">0:00</div>
+      <div class="cd-bar"><i></i></div>
+      <div class="cd-next"></div>
+    </div>
 
     <div class="stats">
       <div class="stat"><div class="lbl">Time</div><div class="v num" id="time">00:00</div></div>
@@ -221,6 +300,12 @@ nav svg{width:22px;height:22px}
     <div class="zbar" id="zbar"><i></i><i></i><i></i><i></i><i></i><b id="zmark"></b></div>
     </div>
     <div class="colB">
+    <div class="cd cdB" hidden>
+      <div class="cd-top"><span class="cd-lbl">RUN</span><span class="cd-round"></span></div>
+      <div class="cd-time num">0:00</div>
+      <div class="cd-bar"><i></i></div>
+      <div class="cd-next"></div>
+    </div>
 
     <div class="ctrl">
       <div class="name">Speed</div>
@@ -258,6 +343,7 @@ nav svg{width:22px;height:22px}
     <div class="setting" style="margin-top:8px">Voice coach
       <select id="voice"><option value="off">Off</option><option value="en">English</option><option value="ms">Bahasa Melayu</option></select>
     </div>
+    <div class="setting" style="margin-top:8px">Countdown beeps (last 3 seconds)<input type="checkbox" id="beeps" checked></div>
     <div class="setting" style="margin-top:8px">Keep screen on during workouts<input type="checkbox" id="wake" checked></div>
     <button class="btn" style="width:100%;margin-top:8px" id="btnTestVoice">Test voice</button>
   </section>
@@ -270,11 +356,26 @@ nav svg{width:22px;height:22px}
 </nav>
 
 <div class="toast" id="toast"></div>
-<div class="modal" id="doneModal"><div class="box">
-  <div style="color:var(--mute);font-size:13px">Workout saved</div>
-  <div class="num" id="doneKm">0.00 km</div>
-  <p id="doneTxt"></p>
-  <button class="btn primary" style="width:100%" id="doneOk">OK</button>
+<div class="sheet" id="sum" hidden><div class="sheet-in">
+  <div class="sum-head">
+    <div class="sum-ok" id="sumIcon">✓</div>
+    <div><div class="sum-title" id="sumTitle">Workout complete</div><div class="sum-sub" id="sumSub"></div></div>
+  </div>
+  <div class="sgrid" id="sumStats"></div>
+  <div class="sbody">
+    <div class="scard wide">
+      <div class="shead">Speed and heart rate<span><b style="color:var(--accent)">■</b> km/h &nbsp;<b style="color:#ff4d6d">━</b> bpm</span></div>
+      <svg id="sumChart" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
+      <div class="axis" id="sumAxis"></div>
+    </div>
+    <div class="scard"><div class="shead">Time in heart-rate zones</div><div id="sumZones"></div></div>
+    <div class="scard"><div class="shead">Splits per km</div><div id="sumSplits"></div></div>
+  </div>
+  <div class="row" style="margin-top:14px">
+    <button class="btn" id="sumExport">Export TCX</button>
+    <button class="btn primary" id="sumDone">Done</button>
+  </div>
+  <button class="link" id="sumDelete" style="display:block;margin:14px auto 0">Delete this workout</button>
 </div></div>
 
 <script>
@@ -294,13 +395,13 @@ let program = null;         // active program
 let demoTimer = null;
 
 const PROGRAMS = [
-  { id:'easy', name:'Easy Walk', desc:'20 min · steady walking', seg:[[20,4.5,0]] },
+  { id:'easy', name:'Easy Walk', desc:'20 min · steady walking', seg:[[20,4.5,0,'Walk']] },
   { id:'interval', name:'Interval', levels:[8,10,12,14,16], level:2,
     build(s){ const rec = s >= 12 ? 6 : 5;   // jog recovery for harder levels
       this.desc = `24 min · 6 × 1 min at ${s} km/h, 2 min recovery at ${rec}`;
-      return [[3,4,0],[2,rec,0],...Array(6).fill(0).flatMap(()=>[[1,s,0],[2,rec,0]]),[1,4,0]]; } },
-  { id:'hill', name:'Hill Climb', desc:'25 min · rising incline', seg:[[3,5,0],[4,5,3],[4,5,6],[4,5,9],[4,5,6],[3,5,3],[3,4,0]] },
-  { id:'fatburn', name:'Fat Burn', desc:'30 min · brisk walk with incline', seg:[[5,5,2],[20,5.5,5],[5,4.5,0]] },
+      return [[3,4,0,'Warm up'],[2,rec,0,'Recover'],...Array(6).fill(0).flatMap(()=>[[1,s,0,'Run'],[2,rec,0,'Recover']]),[1,4,0,'Cool down']]; } },
+  { id:'hill', name:'Hill Climb', desc:'25 min · rising incline', seg:[[3,5,0,'Warm up'],[4,5,3,'Climb'],[4,5,6,'Climb'],[4,5,9,'Climb'],[4,5,6,'Descend'],[3,5,3,'Descend'],[3,4,0,'Cool down']] },
+  { id:'fatburn', name:'Fat Burn', desc:'30 min · brisk walk with incline', seg:[[5,5,2,'Warm up'],[20,5.5,5,'Burn'],[5,4.5,0,'Cool down']] },
 ];
 
 /* ===== Helpers ===== */
@@ -310,7 +411,15 @@ const fmtT = s => { s=Math.floor(s); const h=Math.floor(s/3600), m=Math.floor(s%
 const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
 let toastT; function toast(msg, ms=3200){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'), ms); }
 const store = { get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
-                set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} } };
+                set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } } };
+// if the phone's storage fills up, drop chart data from the oldest workouts first (totals are kept)
+function saveHistory(h){
+  if(store.set('runpad_history', h)) return;
+  for(let keep = 40; keep >= 0; keep -= 10){
+    h.forEach((r,i) => { if(i >= keep){ delete r.samples; } });
+    if(store.set('runpad_history', h)) return;
+  }
+}
 
 /* ===== FTMS: parse Treadmill Data (0x2ACD) ===== */
 function parseTreadmill(dv){
@@ -635,7 +744,9 @@ function startWorkout(prog){
   if(!mode){ toast('Connect a treadmill or use Demo mode first'); showView('workout'); return; }
   if(state !== 'idle') finishWorkout(true);
   program = prog || null;
-  ses = { start: Date.now(), time: 0, dist: 0, kcal: 0, baseDist: live.devDist, baseKcal: live.devKcal, seg: -1, hrSum: 0, hrN: 0, hrMax: 0 };
+  ses = { start: Date.now(), time: 0, dist: 0, kcal: 0, baseDist: live.devDist, baseKcal: live.devKcal, seg: -1, hrSum: 0, hrN: 0, hrMax: 0,
+          samples: [], splits: [], lastSplitT: 0, zoneSec: [0,0,0,0,0] };
+  initAudio();
   state = 'running';
   coach = { km: 0, half: false, last: false, warned: -1, zone: -1, zoneSince: 0, zoneSaid: -1, zoneAt: 0 };
   keepAwake(true);
@@ -653,15 +764,16 @@ function togglePause(force){
 function finishWorkout(silent){
   if(state === 'idle') return;
   cpWrite([0x08, 0x01]);   // stop
-  const rec = { at: Date.now(), time: ses.time, dist: ses.dist, kcal: Math.round(ses.kcal), prog: program ? program.name : 'Manual',
-                avgHr: ses.hrN ? Math.round(ses.hrSum / ses.hrN) : null, maxHr: ses.hrMax || null };
+  ses.samples.push([ses.time, Math.round(live.speed*10), Math.round(live.incline*10), (hr.bpm && Date.now()-hr.at < 6000) ? hr.bpm : 0, Math.round(ses.dist)]);
+  const rec = { at: Date.now(), time: ses.time, dist: Math.round(ses.dist), kcal: Math.round(ses.kcal),
+                prog: program ? program.name + (program.levels ? ' L' + (program.level+1) : '') : 'Manual',
+                avgHr: ses.hrN ? Math.round(ses.hrSum / ses.hrN) : null, maxHr: ses.hrMax || null,
+                samples: ses.samples, splits: ses.splits, zoneSec: ses.zoneSec };
   state = 'idle'; program = null; keepAwake(false);
   if(!silent && rec.time >= 10) say('done', (rec.dist/1000).toFixed(2), rec.kcal);
   if(rec.time >= 10){
-    const h = store.get('runpad_history', []); h.unshift(rec); store.set('runpad_history', h.slice(0,100)); renderHistory();
-    if(!silent){ $('doneKm').textContent = (rec.dist/1000).toFixed(2) + ' km';
-      $('doneTxt').textContent = fmtT(rec.time) + ' · ' + rec.kcal + ' kcal · ' + rec.prog +
-        (rec.avgHr ? ' · avg ' + rec.avgHr + ' / max ' + rec.maxHr + ' bpm' : ''); $('doneModal').classList.add('show'); }
+    const h = store.get('runpad_history', []); h.unshift(rec); saveHistory(h.slice(0,100)); renderHistory();
+    if(!silent) openSummary(rec, true);
   }
   ses = null; render();
 }
@@ -681,7 +793,8 @@ function applySegment(i){
 setInterval(() => {
   if(state !== 'running' || !ses) return;
   ses.time++;
-  if(hr.bpm && Date.now() - hr.at < 6000){ ses.hrSum += hr.bpm; ses.hrN++; ses.hrMax = Math.max(ses.hrMax, hr.bpm); }
+  const hrFresh = hr.bpm && Date.now() - hr.at < 6000;
+  if(hrFresh){ ses.hrSum += hr.bpm; ses.hrN++; ses.hrMax = Math.max(ses.hrMax, hr.bpm); ses.zoneSec[zoneOf(hr.bpm)]++; }
   // distance: prefer treadmill's own counter, else integrate speed
   if(live.devDist !== null && ses.baseDist !== null && live.devDist >= ses.baseDist) ses.dist = live.devDist - ses.baseDist;
   else ses.dist += live.speed / 3.6;
@@ -690,10 +803,14 @@ setInterval(() => {
   else { const w = +$('weight').value || 70, mpm = live.speed*1000/60, g = live.incline/100, run = live.speed > 7.5;
          const vo2 = run ? 0.2*mpm + 0.9*mpm*g + 3.5 : 0.1*mpm + 1.8*mpm*g + 3.5;
          if(live.speed > 0.5) ses.kcal += vo2 * w / 1000 * 5 / 60; }
+  // km splits + a sample every 5 s for the summary chart
+  while(ses.dist >= (ses.splits.length + 1) * 1000){ ses.splits.push(ses.time - ses.lastSplitT); ses.lastSplitT = ses.time; }
+  if(ses.time % 5 === 0) ses.samples.push([ses.time, Math.round(live.speed*10), Math.round(live.incline*10), hrFresh ? hr.bpm : 0, Math.round(ses.dist)]);
   if(program){
     const s = segIndexAt(ses.time);
-    if(!s){ toast('Program complete 🎉'); finishWorkout(); return; }
-    if(s.i !== ses.seg) applySegment(s.i);
+    if(!s){ beep(1320, .45); toast('Program complete 🎉'); finishWorkout(); return; }
+    if(s.i !== ses.seg){ beep(1320, .35); applySegment(s.i); }
+    else if(s.left <= 3) beep(880, .12);
   }
   coachTick();
   render();
@@ -711,12 +828,8 @@ function render(){
   const go = $('btnGo');
   go.textContent = state === 'running' ? 'Pause' : state === 'paused' ? 'Resume' : 'Start';
   go.classList.toggle('pause', state === 'running');
-  if(program && ses){
-    const s = segIndexAt(ses.time);
-    if(s){ const nx = program.seg[s.i+1];
-      $('segInfo').textContent = program.name + ' · ' + (s.i+1) + '/' + program.seg.length +
-        (nx ? ' · next ' + nx[1].toFixed(1) + ' km/h' + (nx[2] ? ', ' + nx[2] + '%' : '') + ' in ' + fmtT(s.left) : ' · ' + fmtT(s.left) + ' left'); }
-  } else $('segInfo').textContent = state === 'paused' ? 'Paused' : '';
+  $('segInfo').textContent = state === 'paused' && !program ? 'Paused' : '';
+  renderCountdown();
 }
 function buildChips(){
   const opts = [3, 5, 7, 9, 12].filter(v => v >= limits.smin && v <= limits.smax);
@@ -737,7 +850,7 @@ function renderHistory(){
   const h = store.get('runpad_history', []);
   $('histList').innerHTML = h.length ? h.map(r => {
     const d = new Date(r.at);
-    return `<div class="hist"><div><div class="when">${d.toLocaleDateString(undefined,{day:'numeric',month:'short'})}, ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+    return `<div class="hist" data-at="${r.at}"><div><div class="when">${d.toLocaleDateString(undefined,{day:'numeric',month:'short'})}, ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
       <div class="what">${r.prog} · ${fmtT(r.time)} · ${r.kcal} kcal${r.avgHr ? ' · ♥ ' + r.avgHr : ''}</div></div><div class="km num">${(r.dist/1000).toFixed(2)}<small style="font-size:13px;color:var(--mute)"> km</small></div></div>`;
   }).join('') : '<div class="empty">No workouts yet</div>';
 }
@@ -746,13 +859,152 @@ function showView(v){
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
 }
 
+
+/* ===== Big countdown for program steps ===== */
+const segType = l => /run/i.test(l) ? 't-run' : /recover|descend/i.test(l) ? 't-recover' : /climb|burn/i.test(l) ? 't-climb' : 't-easy';
+const mss = s => Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0');
+function renderCountdown(){
+  const on = !!(program && ses);
+  document.body.classList.toggle('in-prog', on);
+  const s = on ? segIndexAt(ses.time) : null;
+  document.querySelectorAll('.cd').forEach(el => {
+    el.hidden = !s; if(!s) return;
+    const seg = program.seg[s.i], lbl = seg[3] || 'Step', nx = program.seg[s.i+1], dur = seg[0]*60;
+    const runs = program.seg.filter(x => x[3] === 'Run').length;
+    const done = program.seg.slice(0, s.i+1).filter(x => x[3] === 'Run').length;
+    el.className = 'cd ' + (el.classList.contains('cdA') ? 'cdA ' : 'cdB ') + segType(lbl) +
+                   (state === 'paused' ? ' paused' : s.left <= 5 ? ' final' : '');
+    el.querySelector('.cd-lbl').textContent = state === 'paused' ? 'PAUSED' : lbl.toUpperCase();
+    el.querySelector('.cd-round').textContent = runs
+      ? (lbl === 'Run' ? 'Round ' + done + ' of ' + runs : done + ' of ' + runs + ' rounds done')
+      : 'Step ' + (s.i+1) + ' of ' + program.seg.length;
+    el.querySelector('.cd-time').textContent = mss(s.left);
+    el.querySelector('.cd-bar i').style.width = ((1 - s.left/dur) * 100).toFixed(1) + '%';
+    el.querySelector('.cd-next').innerHTML = nx
+      ? 'Next: <b>' + (nx[3] || 'Step') + '</b> · ' + nx[1] + ' km/h' + (nx[2] ? ' · ' + nx[2] + '%' : '')
+      : '<b>Last step</b> – finish strong';
+  });
+}
+
+/* ===== Beeps (Web Audio) ===== */
+let actx = null;
+function initAudio(){ try{ if(!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if(actx.state === 'suspended') actx.resume(); }catch(e){} }
+function beep(freq, len){
+  if(!actx || !$('beeps').checked) return;
+  try{
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.frequency.value = freq; o.type = 'sine';
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + .02); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + len + .05);
+  }catch(e){}
+}
+
+/* ===== Workout summary ===== */
+const ZCOL = ['#7a8699','#3ddc97','#ffc53d','#ff8a3d','#ff4d6d'];
+const ZNAME = ['Z1 Warm up','Z2 Fat burn','Z3 Aerobic','Z4 Anaerobic','Z5 Max'];
+function zoneOf(bpm){ const pct = bpm / hrMax(); let z = 0; ZONES.forEach((zz,i) => { if(pct >= zz[1]) z = i; }); return z; }
+let sumRec = null;
+function openSummary(r, fresh){
+  sumRec = r;
+  const d = new Date(r.at);
+  $('sumIcon').className = 'sum-ok' + (fresh ? '' : ' hist'); $('sumIcon').textContent = fresh ? '✓' : '⏱';
+  $('sumTitle').textContent = fresh ? 'Workout complete' : r.prog;
+  $('sumSub').textContent = (fresh ? r.prog + ' · ' : '') + d.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}) + ', ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  const pace = r.dist > 50 ? mss(r.time / (r.dist/1000)) : '--';
+  $('sumStats').innerHTML = [
+    ['Time', fmtT(r.time), ''], ['Distance', (r.dist/1000).toFixed(2), 'km'],
+    ['Calories', r.kcal, 'kcal'], r.avgHr ? ['Avg / max HR', r.avgHr, '/ ' + r.maxHr] : ['Avg pace', pace, '/km']
+  ].map(x => `<div><div class="l">${x[0]}</div><div class="v">${x[1]}<small>${x[2]}</small></div></div>`).join('');
+  drawChart(r); drawZones(r); drawSplits(r);
+  $('sum').hidden = false; $('sum').scrollTop = 0;
+}
+function drawChart(r){
+  const S = r.samples || [], svg = $('sumChart');
+  if(S.length < 2){ svg.innerHTML = '<text x="150" y="68" text-anchor="middle" font-size="11" fill="#8a93a1">No chart for this workout</text>'; $('sumAxis').innerHTML = ''; return; }
+  const T = Math.max(S[S.length-1][0], 1), W = 300, H = 130, B = 126;
+  const maxS = Math.max(8, ...S.map(x => x[1]/10)), hrs = S.filter(x => x[3]);
+  const hrLo = 60, hrHi = Math.max(180, ...hrs.map(x => x[3]));
+  const X = t => (t/T*W).toFixed(1), YS = v => (B - v/maxS*(B-14)).toFixed(1), YH = v => (B - (v-hrLo)/(hrHi-hrLo)*(B-14)).toFixed(1);
+  let g = '';
+  [0.25,0.5,0.75].forEach(f => g += `<line x1="0" x2="${W}" y1="${(B - f*(B-14)).toFixed(1)}" y2="${(B - f*(B-14)).toFixed(1)}" stroke="#2a3039" stroke-width="0.6" vector-effect="non-scaling-stroke"/>`);
+  // speed: stepped area
+  let d = `M0,${B}`; let prevY = YS(S[0][1]/10);
+  S.forEach((x,i) => { const y = YS(x[1]/10); d += ` L${X(x[0])},${i ? prevY : y} L${X(x[0])},${y}`; prevY = y; });
+  d += ` L${W},${prevY} L${W},${B} Z`;
+  g += `<path d="${d}" fill="#ff6a3d" fill-opacity="0.32" stroke="#ff6a3d" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`;
+  // heart rate line (breaks where the watch had no reading)
+  let line = '', pen = false;
+  S.forEach(x => { if(x[3]){ line += (pen ? ' L' : ' M') + X(x[0]) + ',' + YH(x[3]); pen = true; } else pen = false; });
+  if(line) g += `<path d="${line}" fill="none" stroke="#ff4d6d" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+  svg.innerHTML = g;
+  const mid = Math.round(T/120), end = Math.round(T/60);
+  $('sumAxis').innerHTML = `<span>0 min</span><span>top ${maxS.toFixed(0)} km/h${hrs.length ? ' · max ' + Math.max(...hrs.map(x=>x[3])) + ' bpm' : ''}</span><span>${end} min</span>`;
+}
+function drawZones(r){
+  const z = r.zoneSec || [0,0,0,0,0], tot = z.reduce((a,b) => a+b, 0);
+  if(!tot){ $('sumZones').innerHTML = '<div class="muted">Connect your watch to see time in each zone.</div>'; return; }
+  const mm = s => s >= 60 ? Math.round(s/60) + ' min' : s + ' s';
+  $('sumZones').innerHTML = '<div class="zbar2">' + z.map((v,i) => v ? `<i style="flex:${v};background:${ZCOL[i]}"></i>` : '').join('') + '</div>' +
+    z.map((v,i) => `<div class="zrow"><span style="color:${ZCOL[i]}">●</span><span>${ZNAME[i]}</span><span>${mm(v)} · ${Math.round(v/tot*100)}%</span></div>`).join('');
+}
+function drawSplits(r){
+  const sp = r.splits || [];
+  const rest = r.dist - sp.length*1000, restT = r.time - sp.reduce((a,b) => a+b, 0);
+  if(!sp.length){
+    $('sumSplits').innerHTML = '<div class="muted">' + (r.dist ? 'Under 1 km – average pace ' + (r.dist > 50 ? mss(r.time/(r.dist/1000)) + ' /km' : '--') : 'No distance recorded') + '.</div>'; return;
+  }
+  const best = Math.min(...sp);
+  let h = sp.map((t,i) => `<div class="srow${t === best && sp.length > 1 ? ' best' : ''}"><span class="k">km ${i+1}</span><span class="b"><i style="width:${Math.round(best/t*100)}%"></i></span><span class="p">${mss(t)}${t === best && sp.length > 1 ? ' ★' : ''}</span></div>`).join('');
+  if(rest >= 100) h += `<div class="srow"><span class="k">+${(rest/1000).toFixed(2)}</span><span class="b"><i style="width:${Math.round(best/(restT/(rest/1000))*100)}%"></i></span><span class="p">${mss(restT/(rest/1000))}</span></div>`;
+  $('sumSplits').innerHTML = h;
+}
+
+/* ===== TCX export (Strava, Google Fit, Garmin Connect) ===== */
+function toTCX(r){
+  const t0 = r.at - r.time*1000, iso = ms => new Date(ms).toISOString();
+  const pts = (r.samples || []).map(x => `<Trackpoint><Time>${iso(t0 + x[0]*1000)}</Time><DistanceMeters>${x[4]}</DistanceMeters>` +
+    (x[3] ? `<HeartRateBpm><Value>${x[3]}</Value></HeartRateBpm>` : '') +
+    `<Extensions><ns3:TPX><ns3:Speed>${(x[1]/36).toFixed(2)}</ns3:Speed></ns3:TPX></Extensions></Trackpoint>`).join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" xmlns:ns3="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
+<Activities><Activity Sport="Running"><Id>${iso(t0)}</Id>
+<Lap StartTime="${iso(t0)}"><TotalTimeSeconds>${r.time}</TotalTimeSeconds><DistanceMeters>${r.dist}</DistanceMeters><Calories>${r.kcal}</Calories>` +
+  (r.avgHr ? `<AverageHeartRateBpm><Value>${r.avgHr}</Value></AverageHeartRateBpm><MaximumHeartRateBpm><Value>${r.maxHr}</Value></MaximumHeartRateBpm>` : '') +
+  `<Intensity>Active</Intensity><TriggerMethod>Manual</TriggerMethod><Track>
+${pts}
+</Track></Lap><Notes>RunPad treadmill – ${r.prog}</Notes></Activity></Activities></TrainingCenterDatabase>`;
+}
+async function exportTCX(){
+  const r = sumRec; if(!r) return;
+  const d = new Date(r.at), pad = n => String(n).padStart(2,'0');
+  const name = `runpad-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.tcx`;
+  const blob = new Blob([toTCX(r)], { type: 'application/vnd.garmin.tcx+xml' });
+  try{
+    const file = new File([blob], name, { type: blob.type });
+    if(navigator.canShare && navigator.canShare({ files: [file] })){ await navigator.share({ files: [file], title: name }); return; }
+  }catch(e){ if(e.name === 'AbortError') return; }
+  try{
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast('Saved ' + name + ' to Downloads. Upload it at strava.com → Upload activity.', 5000);
+  }catch(e){ toast('Download isn’t allowed here. Use the app on your GitHub page.'); }
+}
+
 /* ===== Events ===== */
 $('btnConnect').onclick = () => connectBLE(false);
 $('btnScanAll').onclick = () => connectBLE(true);
 $('btnDemo').onclick = startDemo;
 $('btnGo').onclick = () => togglePause();
 $('btnStop').onclick = () => finishWorkout();
-$('doneOk').onclick = () => $('doneModal').classList.remove('show');
+$('sumDone').onclick = () => { $('sum').hidden = true; };
+$('sumExport').onclick = exportTCX;
+let delArm = 0;
+$('sumDelete').onclick = () => {
+  if(Date.now() - delArm > 3000){ delArm = Date.now(); $('sumDelete').textContent = 'Tap again to delete'; setTimeout(() => $('sumDelete').textContent = 'Delete this workout', 3000); return; }
+  saveHistory(store.get('runpad_history', []).filter(x => x.at !== sumRec.at)); renderHistory(); $('sum').hidden = true; toast('Workout deleted');
+};
+$('beeps').checked = store.get('runpad_beeps', true);
+$('beeps').onchange = e => store.set('runpad_beeps', e.target.checked);
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => showView(b.dataset.view));
 document.addEventListener('click', e => {
   const a = e.target.closest('[data-act]'), c = e.target.closest('[data-spd]'), p = e.target.closest('[data-prog]');
@@ -764,6 +1016,8 @@ document.addEventListener('click', e => {
     render(); }
   if(c){ sendSpeed(+c.dataset.spd); render(); }
   if(p){ startWorkout(PROGRAMS.find(x => x.id === p.dataset.prog)); }
+  const hrow = e.target.closest('.hist[data-at]');
+  if(hrow){ const r = store.get('runpad_history', []).find(x => String(x.at) === hrow.dataset.at); if(r) openSummary(r, false); }
   const l = e.target.closest('[data-lvl]');
   if(l){ const pr = PROGRAMS.find(x => x.id === l.dataset.pid); pr.level = +l.dataset.lvl;
     store.set('runpad_lvl_' + pr.id, pr.level); renderPrograms(); }
