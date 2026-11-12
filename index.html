@@ -119,6 +119,59 @@ nav svg{width:22px;height:22px}
 .modal .box{background:var(--card);border-radius:18px;padding:20px;width:100%;max-width:340px;text-align:center}
 .modal .box .num{font-size:44px;font-weight:700;margin:8px 0}
 .modal .box p{color:var(--mute);font-size:13px;margin-bottom:16px}
+
+/* ===== Landscape: two columns + side nav ===== */
+@media (orientation: landscape) and (min-width: 600px){
+  body{padding-left:calc(84px + env(safe-area-inset-left))}
+  nav{top:0;bottom:0;right:auto;width:calc(76px + env(safe-area-inset-left));flex-direction:column;justify-content:center;gap:8px;
+      border-top:0;border-right:1px solid var(--line);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  nav button{flex:0;padding:12px 0}
+  header{padding:10px 8px 6px}
+  main{max-width:1100px;padding:0 8px 16px}
+  #v-workout.active{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;align-items:start}
+  #v-workout .connect{grid-column:1/-1}
+  .colA,.colB{min-width:0}
+  .hero{display:flex;align-items:baseline;justify-content:center;gap:10px;padding:0}
+  .hero .lbl{display:none}
+  .hero .big{font-size:clamp(64px,20vh,128px)}
+  .seg{text-align:center}
+  .stats{grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 10px}
+  .stat{padding:8px 10px}
+  .stat .v{font-size:clamp(20px,6vh,30px)}
+  .stat .v small{font-size:11px}
+  .zbar{margin:8px 2px 0}
+  .colB .ctrl{margin-bottom:8px}
+  .chips{margin:0 0 8px}
+  .actions{margin-top:8px!important}
+  #v-programs.active #progList,#v-history.active #histList{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #v-programs .prog,#v-history .hist{margin-bottom:0}
+  #v-history .setting{max-width:520px}
+  .toast{bottom:20px}
+}
+/* short screens (phone sideways) – tighten everything */
+@media (orientation: landscape) and (max-height: 480px){
+  .pm{height:42px;width:50px;font-size:24px}
+  .ctrl{padding:6px}
+  .ctrl .val{font-size:22px}
+  .chip{padding:6px 0;font-size:17px}
+  .go,.stop{height:50px}
+  .hr{padding:8px 12px}
+  .hrv{font-size:26px}
+  .heart{font-size:24px}
+  nav svg{width:20px;height:20px}
+}
+/* tablets sideways – centre it and make it bigger */
+@media (orientation: landscape) and (min-width: 600px) and (min-height: 600px){
+  main{display:flex;flex-direction:column;justify-content:center}
+  #v-workout.active{align-items:center}
+  .stat .v{font-size:40px}
+  .stat{padding:14px 16px}
+  .pm{height:68px;width:72px;font-size:32px}
+  .ctrl .val{font-size:36px}
+  .chip{padding:14px 0;font-size:24px}
+  .go,.stop{height:84px;font-size:20px}
+  .hrv{font-size:40px}
+}
 </style>
 </head>
 <body>
@@ -142,6 +195,7 @@ nav svg{width:22px;height:22px}
       <button class="link" id="btnScanAll">Treadmill not listed? Scan all devices</button>
     </div>
 
+    <div class="colA">
     <div class="hero">
       <div class="lbl">Speed</div>
       <div class="big num" id="speed">0.0</div>
@@ -165,6 +219,8 @@ nav svg{width:22px;height:22px}
       <button class="hrbtn" id="btnHR">Connect watch</button>
     </div>
     <div class="zbar" id="zbar"><i></i><i></i><i></i><i></i><i></i><b id="zmark"></b></div>
+    </div>
+    <div class="colB">
 
     <div class="ctrl">
       <div class="name">Speed</div>
@@ -183,6 +239,7 @@ nav svg{width:22px;height:22px}
     <div class="actions" style="margin-top:16px">
       <button class="go" id="btnGo">Start</button>
       <button class="stop" id="btnStop">Finish</button>
+    </div>
     </div>
   </section>
 
